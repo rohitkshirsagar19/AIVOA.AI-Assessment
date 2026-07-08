@@ -176,6 +176,8 @@ def log_interaction_tool(user_message: str, current_interaction: dict[str, Any])
 
 COMPLIANCE_RULES = {
     "guaranteed cure": "Guaranteed cure claim",
+    "guarantees complete cure": "Guaranteed cure claim",
+    "complete cure": "Guaranteed cure claim",
     "no side effects": "Claims no side effects",
     "100% safe": "Claims 100% safe",
     "better than all competitors": "Comparative superiority claim",
@@ -187,10 +189,12 @@ COMPLIANCE_RULES = {
 def detect_compliance_issues(user_message: str) -> list[str]:
     normalized = user_message.lower()
     issues: list[str] = []
+    seen: set[str] = set()
 
     for phrase, label in COMPLIANCE_RULES.items():
-        if phrase in normalized:
+        if phrase in normalized and label not in seen:
             issues.append(label)
+            seen.add(label)
 
     return issues
 

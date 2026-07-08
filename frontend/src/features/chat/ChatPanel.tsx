@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import type { AppDispatch, RootState } from '../../app/store';
 import { sendChatMessage } from '../../api/chat';
+import ToolBadge from '../../components/ToolBadge';
+import UpdatedFieldsList from '../../components/UpdatedFieldsList';
 import { addAssistantMessage, addUserMessage } from '../../store/chatSlice';
 import { setHcpProfile } from '../../store/hcpSlice';
 import { patchInteraction } from '../../store/interactionSlice';
@@ -16,6 +18,7 @@ export default function ChatPanel() {
   const error = useSelector((state: RootState) => state.ui.error);
   const lastToolUsed = useSelector((state: RootState) => state.ui.lastToolUsed);
   const [input, setInput] = useState('');
+  const [fieldsUpdated, setFieldsUpdated] = useState<string[]>([]);
 
   const sessionId = useMemo(() => 'demo-session-1', []);
 
@@ -39,6 +42,7 @@ export default function ChatPanel() {
       dispatch(setHcpProfile(payload.hcp_profile));
       dispatch(setLastToolUsed(payload.tool_calls[0]?.tool_name ?? null));
       dispatch(addAssistantMessage(payload.message));
+      setFieldsUpdated(payload.fields_updated);
 
       if (payload.warnings.length > 0) {
         dispatch(setError(payload.warnings.join(' ')));
@@ -48,6 +52,7 @@ export default function ChatPanel() {
       dispatch(setError(messageText));
       dispatch(addAssistantMessage('The assistant could not process that request.'));
       dispatch(setLastToolUsed(null));
+      setFieldsUpdated([]);
     } finally {
       dispatch(setLoading(false));
     }
@@ -55,20 +60,25 @@ export default function ChatPanel() {
 
   return (
     <section className="panel panel-chat">
-      <div className="panel-header">
+      <div className="panel-header panel-header-chat">
         <div>
           <p className="eyebrow">AI Assistant</p>
           <h1>Conversation Control</h1>
+          <p className="panel-subtitle panel-subtitle-chat">
+            Every form change is routed through the backend agent before it appears in the record.
+          </p>
         </div>
         <span className="status-pill status-pill-accent">Groq + LangGraph</span>
       </div>
 
-      {lastToolUsed ? <div className="tool-banner">Last tool used: {lastToolUsed}</div> : null}
-      {error ? <div className="error-banner">{error}</div> : null}
+      <div className="chat-meta-row">
+        <ToolBadge toolName={lastToolUsed} />
+        {error ? <div className="error-banner">{error}</div> : null}
+      </div>
 
       <div className="chat-stack">
         {messages.length === 0 ? (
-          <article className="chat-bubble assistant">
+          <article className="chat-bubble assistant chat-bubble-empty">
             <span className="bubble-label">Assistant</span>
             <p>Ask the assistant to search an HCP, log an interaction, edit a field, set a follow-up, or run a compliance check.</p>
           </article>
@@ -91,6 +101,8 @@ export default function ChatPanel() {
           </article>
         ) : null}
       </div>
+
+      <UpdatedFieldsList fieldsUpdated={fieldsUpdated} />
 
       <form className="composer" onSubmit={handleSubmit}>
         <input

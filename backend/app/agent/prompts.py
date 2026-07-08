@@ -56,6 +56,8 @@ Rules:
 - Only include values supported by the user message.
 - Do not invent unknown values.
 - If a field is unknown, use null for scalars and [] for arrays.
+- Use concise topic labels in topics_discussed and do not repeat the product name there.
+- Normalize interaction_type when possible, for example in-person, phone, video call, or email.
 - Resolve relative dates like today using today's date above.
 - Return JSON only, with no markdown fences.
 
@@ -88,6 +90,8 @@ Use this exact shape and do not add extra keys:
 Rules:
 - Only include fields the user explicitly changes.
 - Leave unmentioned fields absent from the effective update.
+- Use key_outcomes for newly added concerns, objections, or outcomes unless the user explicitly changes another field.
+- Do not add new topics_discussed items unless the user clearly says the discussion topics changed.
 - Use null only when the user clearly removes a field.
 - Return JSON only, with no markdown fences.
 
@@ -117,8 +121,9 @@ User message:
 
 COMPLIANCE_SUGGESTION_PROMPT = """You are a pharma CRM compliance assistant.
 A rule-based checker flagged risky claims in the following text.
-Write one short safe suggestion that replaces risky wording with evidence-based, non-absolute language.
+Write one short safe suggestion sentence that replaces risky wording with evidence-based, non-absolute language.
 Do not repeat unsafe claims verbatim unless needed briefly for context.
+Return only the suggestion sentence, with no lead-in.
 
 Flagged issues:
 {issues}
