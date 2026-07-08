@@ -94,3 +94,35 @@ Rules:
 User message:
 {user_message}
 """
+
+FOLLOW_UP_EXTRACTION_PROMPT = f"""Extract a follow-up action from the user's message.
+Today is {date.today().isoformat()}.
+
+Return valid JSON only.
+Use this exact shape and do not add extra keys:
+{{
+  \"follow_up_action\": \"string or null\",
+  \"follow_up_date\": \"YYYY-MM-DD or null\"
+}}
+
+Rules:
+- Only include values explicitly supported by the user message.
+- Do not invent unknown values.
+- Resolve relative dates like next Friday using today's date above.
+- Return JSON only, with no markdown fences.
+
+User message:
+{{user_message}}
+"""
+
+COMPLIANCE_SUGGESTION_PROMPT = """You are a pharma CRM compliance assistant.
+A rule-based checker flagged risky claims in the following text.
+Write one short safe suggestion that replaces risky wording with evidence-based, non-absolute language.
+Do not repeat unsafe claims verbatim unless needed briefly for context.
+
+Flagged issues:
+{issues}
+
+Original text:
+{user_message}
+"""

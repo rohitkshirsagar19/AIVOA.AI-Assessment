@@ -1,15 +1,20 @@
+from datetime import date
 import json
 import re
 from typing import Any
 
 from app.agent.prompts import (
+    COMPLIANCE_SUGGESTION_PROMPT,
     EDIT_INTERACTION_EXTRACTION_PROMPT,
+    FOLLOW_UP_EXTRACTION_PROMPT,
     HCP_NAME_EXTRACTION_PROMPT,
     LOG_INTERACTION_EXTRACTION_PROMPT,
     TOOL_CLASSIFICATION_PROMPT,
 )
 from app.core.database import SessionLocal
+from app.repositories.follow_up_repository import FollowUpActionRepository
 from app.repositories.hcp_repository import HCPRepository
+from app.schemas.compliance import ComplianceResult
 from app.schemas.hcp import HCPProfileOut
 from app.schemas.interaction import InteractionPatch
 from app.schemas.tool import ToolDecision
@@ -169,6 +174,147 @@ def log_interaction_tool(user_message: str, current_interaction: dict[str, Any])
 
 
 
+COMPLIANCE_RULES = {
+    "guaranteed cure": "Guaranteed cure claim",
+    "no side effects": "Claims no side effects",
+    "100% safe": "Claims 100% safe",
+    "better than all competitors": "Comparative superiority claim",
+    "off-label use": "Mentions off-label use",
+}
+
+
+
+def detect_compliance_issues(user_message: str) -> list[str]:
+    normalized = user_message.lower()
+    issues: list[str] = []
+
+    for phrase, label in COMPLIANCE_RULES.items():
+        if phrase in normalized:
+            issues.append(label)
+
+    return issues
+
+
+
+def generate_compliance_suggestion(user_message: str, issues: list[str]) -> str:
+    prompt = COMPLIANCE_SUGGESTION_PROMPT.format(
+        issues=", ".join(issues),
+        user_message=user_message,
+    )
+
+    try:
+        suggestion = send_groq_prompt(prompt)
+        cleaned = suggestion.strip()
+        if cleaned:
+            return cleaned
+    except Exception:
+        pass
+
+    return "Use approved, evidence-based product language and avoid absolute safety, efficacy, or off-label claims."
+
+
+
+def check_compliance_tool(user_message: str, current_interaction: dict[str, Any]) -> dict[str, Any]:
+    issues = detect_compliance_issues(user_message)
+    status = "flagged" if issues else "clear"
+    suggestion = generate_compliance_suggestion(user_message, issues) if issues else "No risky compliance language detected."
+
+    result = ComplianceResult(
+        compliance_status=status,
+        compliance_issues=issues,
+        compliance_suggestion=suggestion,
+    )
+
+    updated_interaction = dict(current_interaction)
+    updated_interaction.update(result.model_dump())
+
+    fields_updated = [
+        "compliance_status",
+        "compliance_issues",
+        "compliance_suggestion",
+    ]
+
+    if status == "flagged":
+        assistant_message = "Compliance review flagged risky language and added a safer suggestion."
+    else:
+        assistant_message = "Compliance review found no risky language."
+
+    return {
+        "updated_interaction": updated_interaction,
+        "fields_updated": fields_updated,
+        "hcp_profile": None,
+        "tool_message": assistant_message,
+    }
+
+
+def extract_follow_up_payload(user_message: str) -> dict[str, Any]:
+    prompt = FOLLOW_UP_EXTRACTION_PROMPT.replace("{user_message}", user_message)
+
+    try:
+        raw_response = send_groq_prompt(prompt)
+        payload = _extract_json_payload(raw_response)
+        if not isinstance(payload.get("follow_up_action"), (str, type(None))):
+            payload["follow_up_action"] = None
+        if not isinstance(payload.get("follow_up_date"), (str, type(None))):
+            payload["follow_up_date"] = None
+        return payload
+    except Exception:
+        return {"follow_up_action": None, "follow_up_date": None}
+
+
+
+def set_follow_up_action_tool(
+    user_message: str, current_interaction: dict[str, Any]
+) -> dict[str, Any]:
+    payload = extract_follow_up_payload(user_message)
+    updated_interaction = dict(current_interaction)
+    fields_updated: list[str] = []
+
+    follow_up_action = payload.get("follow_up_action")
+    follow_up_date = payload.get("follow_up_date")
+
+    if isinstance(follow_up_action, str) and follow_up_action.strip():
+        updated_interaction["follow_up_action"] = follow_up_action.strip()
+        fields_updated.append("follow_up_action")
+    else:
+        follow_up_action = None
+
+    if isinstance(follow_up_date, str) and follow_up_date.strip():
+        updated_interaction["follow_up_date"] = follow_up_date.strip()
+        fields_updated.append("follow_up_date")
+    else:
+        follow_up_date = None
+
+    created_record = False
+    hcp_name = updated_interaction.get("hcp_name")
+    if follow_up_action and hcp_name:
+        with SessionLocal() as db:
+            hcp_repository = HCPRepository(db)
+            profile = hcp_repository.search_by_name(str(hcp_name))
+            if profile is not None:
+                follow_up_repository = FollowUpActionRepository(db)
+                follow_up_repository.create(
+                    hcp_profile_id=profile.id,
+                    action=follow_up_action,
+                    due_date=date.fromisoformat(follow_up_date) if follow_up_date else None,
+                )
+                created_record = True
+
+    if fields_updated:
+        assistant_message = "Updated follow-up details: " + ", ".join(fields_updated) + "."
+        if created_record:
+            assistant_message += " Follow-up action saved."
+    else:
+        assistant_message = "No follow-up details could be confirmed from the message."
+
+    return {
+        "updated_interaction": updated_interaction,
+        "fields_updated": fields_updated,
+        "hcp_profile": None,
+        "tool_message": assistant_message,
+    }
+
+
 def extract_edit_interaction_patch(
     user_message: str, current_interaction: dict[str, Any]
 ) -> InteractionPatch:
@@ -257,16 +403,15 @@ def run_tool(tool_name: str, user_message: str, current_interaction: dict[str, A
     if tool_name == "edit_interaction":
         return edit_interaction_tool(user_message, current_interaction)
 
+    if tool_name == "set_follow_up_action":
+        return set_follow_up_action_tool(user_message, current_interaction)
+
+    if tool_name == "check_compliance":
+        return check_compliance_tool(user_message, current_interaction)
+
     updated_interaction = dict(current_interaction)
     fields_updated: list[str] = []
     tool_message = f"Tool selected: {tool_name}."
-
-    if tool_name == "set_follow_up_action":
-        updated_interaction["follow_up_action"] = "Send additional product information"
-        fields_updated = ["follow_up_action"]
-    elif tool_name == "check_compliance":
-        updated_interaction["compliance_status"] = "clear"
-        fields_updated = ["compliance_status"]
 
     return {
         "updated_interaction": updated_interaction,
