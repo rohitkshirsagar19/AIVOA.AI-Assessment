@@ -1,0 +1,12 @@
+{
+  "name": "ai-first-hcp-crm-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "echo \"Frontend bootstrap pending\"",
+    "build": "echo \"Frontend bootstrap pending\"",
+    "test": "echo \"Frontend tests pending\"",
+    "lint": "echo \"Frontend linting pending\""
+  }
+}

@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-first-hcp-crm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: hcp_crm
+      POSTGRES_USER: hcp_crm
+      POSTGRES_PASSWORD: hcp_crm
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

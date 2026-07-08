@@ -1,0 +1,17 @@
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.models.hcp_profile import HCPProfile
+
+
+class HCPRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def list_profiles(self) -> list[HCPProfile]:
+        statement = select(HCPProfile).order_by(HCPProfile.name.asc())
+        return list(self.db.scalars(statement).all())
+
+    def get_by_name(self, name: str) -> HCPProfile | None:
+        statement = select(HCPProfile).where(HCPProfile.name == name)
+        return self.db.scalar(statement)
