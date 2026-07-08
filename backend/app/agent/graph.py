@@ -2,7 +2,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app.agent.prompts import SYSTEM_PROMPT
 from app.agent.state import AgentState
-from app.agent.tools import classify_tool_decision, fallback_tool_decision, run_mock_tool
+from app.agent.tools import classify_tool_decision, fallback_tool_decision, run_tool
 
 
 
@@ -17,20 +17,32 @@ def agent_node(state: AgentState) -> dict[str, object]:
 
 def tool_node(state: AgentState) -> dict[str, object]:
     decision = state["tool_decision"] or fallback_tool_decision(state["user_message"])
-    updated_interaction = run_mock_tool(
+    return run_tool(
         decision.tool_name,
+        state["user_message"],
         state.get("current_interaction", {}),
     )
-    return {"updated_interaction": updated_interaction}
 
 
 
 def response_node(state: AgentState) -> dict[str, object]:
     rationale = state["tool_decision"].rationale if state["tool_decision"] else "No rationale available."
-    assistant_message = (
-        f"{SYSTEM_PROMPT.strip()}\n\n"
-        f"Tool selected: {state['tool_used']}. Reason: {rationale}"
-    )
+    tool_message = state.get("tool_message")
+
+    if tool_message:
+        assistant_message = f"{tool_message} Reason: {rationale}"
+    elif state.get("hcp_profile") is not None:
+        profile = state["hcp_profile"]
+        assistant_message = (
+            f"Found HCP profile for {profile['name']} ({profile['specialty']}, {profile['location']}). "
+            f"Reason: {rationale}"
+        )
+    else:
+        assistant_message = (
+            f"{SYSTEM_PROMPT.strip()}\n\n"
+            f"Tool selected: {state['tool_used']}. Reason: {rationale}"
+        )
+
     return {"assistant_message": assistant_message}
 
 
@@ -59,10 +71,16 @@ def run_interaction_graph(
         "tool_decision": None,
         "tool_used": "",
         "updated_interaction": {},
+        "fields_updated": [],
+        "hcp_profile": None,
+        "tool_message": None,
     }
     result = app.invoke(initial_state)
     return {
         "assistant_message": result["assistant_message"],
         "tool_used": result["tool_used"],
         "updated_interaction": result["updated_interaction"],
+        "fields_updated": result.get("fields_updated", []),
+        "hcp_profile": result.get("hcp_profile"),
+        "tool_decision": result.get("tool_decision"),
     }

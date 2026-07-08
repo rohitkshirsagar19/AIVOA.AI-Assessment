@@ -2,9 +2,19 @@ import json
 import re
 from typing import Any
 
-from app.agent.prompts import TOOL_CLASSIFICATION_PROMPT
+from app.agent.prompts import (
+    EDIT_INTERACTION_EXTRACTION_PROMPT,
+    HCP_NAME_EXTRACTION_PROMPT,
+    LOG_INTERACTION_EXTRACTION_PROMPT,
+    TOOL_CLASSIFICATION_PROMPT,
+)
+from app.core.database import SessionLocal
+from app.repositories.hcp_repository import HCPRepository
+from app.schemas.hcp import HCPProfileOut
+from app.schemas.interaction import InteractionPatch
 from app.schemas.tool import ToolDecision
-from app.services.groq_client import GroqConfigurationError, send_groq_test_prompt
+from app.services.groq_client import GroqConfigurationError, send_groq_prompt, send_groq_test_prompt
+from app.services.interaction_merge import merge_interaction_patch
 
 ALLOWED_TOOLS = {
     "log_interaction",
@@ -12,12 +22,6 @@ ALLOWED_TOOLS = {
     "set_follow_up_action",
     "check_compliance",
     "search_hcp_profile",
-}
-
-MOCK_INTERACTION_UPDATE = {
-    "interaction_type": "in-person",
-    "sentiment": "positive",
-    "topics_discussed": ["efficacy"],
 }
 
 
@@ -103,18 +107,170 @@ def fallback_tool_decision(user_message: str) -> ToolDecision:
 
 
 
-def run_mock_tool(tool_name: str, current_interaction: dict[str, Any]) -> dict[str, Any]:
+def extract_hcp_name(user_message: str) -> str | None:
+    prompt = HCP_NAME_EXTRACTION_PROMPT.format(user_message=user_message)
+
+    try:
+        raw_response = send_groq_prompt(prompt)
+        payload = _extract_json_payload(raw_response)
+        hcp_name = payload.get("hcp_name")
+        if isinstance(hcp_name, str) and hcp_name.strip():
+            return hcp_name.strip()
+    except (GroqConfigurationError, RuntimeError, ToolDecisionParseError):
+        pass
+
+    return _fallback_extract_hcp_name(user_message)
+
+
+
+def _fallback_extract_hcp_name(user_message: str) -> str | None:
+    normalized_message = user_message.lower()
+
+    with SessionLocal() as db:
+        repository = HCPRepository(db)
+        for profile in repository.list_profiles():
+            full_name = profile.name.lower()
+            last_name = full_name.split()[-1]
+            if full_name in normalized_message or last_name in normalized_message:
+                return profile.name
+
+    return None
+
+
+
+def extract_interaction_patch(user_message: str) -> InteractionPatch:
+    prompt = LOG_INTERACTION_EXTRACTION_PROMPT.replace("{user_message}", user_message)
+
+    try:
+        raw_response = send_groq_prompt(prompt)
+        payload = _extract_json_payload(raw_response)
+        return InteractionPatch.model_validate_json(json.dumps(payload))
+    except Exception:
+        return InteractionPatch()
+
+
+
+def log_interaction_tool(user_message: str, current_interaction: dict[str, Any]) -> dict[str, Any]:
+    patch = extract_interaction_patch(user_message)
+    merge_result = merge_interaction_patch(current_interaction, patch)
+    fields_updated = merge_result["fields_updated"]
+
+    if fields_updated:
+        assistant_message = "Logged interaction details and updated: " + ", ".join(fields_updated) + "."
+    else:
+        assistant_message = "No interaction fields could be confirmed from the message."
+
+    return {
+        "updated_interaction": merge_result["updated_interaction"],
+        "fields_updated": fields_updated,
+        "hcp_profile": None,
+        "tool_message": assistant_message,
+    }
+
+
+
+def extract_edit_interaction_patch(
+    user_message: str, current_interaction: dict[str, Any]
+) -> InteractionPatch:
+    prompt = EDIT_INTERACTION_EXTRACTION_PROMPT.format(
+        current_interaction=json.dumps(current_interaction, default=str, sort_keys=True),
+        user_message=user_message,
+    )
+
+    try:
+        raw_response = send_groq_prompt(prompt)
+        payload = _extract_json_payload(raw_response)
+        return InteractionPatch.model_validate_json(json.dumps(payload))
+    except Exception:
+        return InteractionPatch()
+
+
+
+def edit_interaction_tool(user_message: str, current_interaction: dict[str, Any]) -> dict[str, Any]:
+    patch = extract_edit_interaction_patch(user_message, current_interaction)
+    merge_result = merge_interaction_patch(current_interaction, patch)
+    fields_updated = merge_result["fields_updated"]
+
+    if fields_updated:
+        assistant_message = "Updated interaction fields: " + ", ".join(fields_updated) + "."
+    else:
+        assistant_message = "No explicit interaction changes were identified from the message."
+
+    return {
+        "updated_interaction": merge_result["updated_interaction"],
+        "fields_updated": fields_updated,
+        "hcp_profile": None,
+        "tool_message": assistant_message,
+    }
+
+
+def search_hcp_profile_tool(
+    user_message: str, current_interaction: dict[str, Any]
+) -> dict[str, Any]:
+    hcp_name = extract_hcp_name(user_message)
+    if hcp_name is None:
+        return {
+            "updated_interaction": dict(current_interaction),
+            "fields_updated": [],
+            "hcp_profile": None,
+            "tool_message": "I could not identify an HCP name from that message.",
+        }
+
+    with SessionLocal() as db:
+        repository = HCPRepository(db)
+        profile = repository.search_by_name(hcp_name)
+
+    if profile is None:
+        return {
+            "updated_interaction": dict(current_interaction),
+            "fields_updated": [],
+            "hcp_profile": None,
+            "tool_message": f"I could not find a profile for {hcp_name}.",
+        }
+
+    profile_out = HCPProfileOut.model_validate(profile)
     updated_interaction = dict(current_interaction)
+    updated_interaction.update(
+        {
+            "hcp_name": profile_out.name,
+            "specialty": profile_out.specialty,
+            "location": profile_out.location,
+        }
+    )
+
+    return {
+        "updated_interaction": updated_interaction,
+        "fields_updated": ["hcp_name", "specialty", "location"],
+        "hcp_profile": profile_out.model_dump(),
+        "tool_message": f"Found HCP profile for {profile_out.name} ({profile_out.specialty}, {profile_out.location}).",
+    }
+
+
+
+def run_tool(tool_name: str, user_message: str, current_interaction: dict[str, Any]) -> dict[str, Any]:
+    if tool_name == "search_hcp_profile":
+        return search_hcp_profile_tool(user_message, current_interaction)
 
     if tool_name == "log_interaction":
-        updated_interaction.update(MOCK_INTERACTION_UPDATE)
-    elif tool_name == "set_follow_up_action":
+        return log_interaction_tool(user_message, current_interaction)
+
+    if tool_name == "edit_interaction":
+        return edit_interaction_tool(user_message, current_interaction)
+
+    updated_interaction = dict(current_interaction)
+    fields_updated: list[str] = []
+    tool_message = f"Tool selected: {tool_name}."
+
+    if tool_name == "set_follow_up_action":
         updated_interaction["follow_up_action"] = "Send additional product information"
+        fields_updated = ["follow_up_action"]
     elif tool_name == "check_compliance":
         updated_interaction["compliance_status"] = "clear"
-    elif tool_name == "search_hcp_profile":
-        updated_interaction["profile_lookup_requested"] = True
-    elif tool_name == "edit_interaction":
-        updated_interaction["interaction_edit_requested"] = True
+        fields_updated = ["compliance_status"]
 
-    return updated_interaction
+    return {
+        "updated_interaction": updated_interaction,
+        "fields_updated": fields_updated,
+        "hcp_profile": None,
+        "tool_message": tool_message,
+    }

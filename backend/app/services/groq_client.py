@@ -20,20 +20,30 @@ def get_groq_client() -> Groq:
 
 
 
-def send_groq_test_prompt(prompt: str) -> str:
+def send_groq_prompt(prompt: str, system_prompt: str | None = None) -> str:
     client = get_groq_client()
     settings = get_settings()
 
+    messages: list[dict[str, str]] = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+
     try:
         completion = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
             model=settings.groq_model,
         )
     except Exception as exc:
-        raise RuntimeError("Groq test prompt failed.") from exc
+        raise RuntimeError("Groq prompt failed.") from exc
 
     content = completion.choices[0].message.content
     if content is None:
         raise RuntimeError("Groq returned an empty response.")
 
     return content
+
+
+
+def send_groq_test_prompt(prompt: str) -> str:
+    return send_groq_prompt(prompt)

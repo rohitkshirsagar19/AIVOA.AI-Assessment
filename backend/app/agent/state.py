@@ -10,3 +10,6 @@ class AgentState(TypedDict):
     tool_decision: ToolDecision | None
     tool_used: str
     updated_interaction: dict[str, Any]
+    fields_updated: list[str]
+    hcp_profile: dict[str, Any] | None
+    tool_message: str | None
