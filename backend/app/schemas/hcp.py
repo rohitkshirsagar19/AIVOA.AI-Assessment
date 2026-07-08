@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
 
-class HCPProfileRead(BaseModel):
+class HCPProfileOut(BaseModel):
     id: int
     name: str
     specialty: str
@@ -10,4 +10,7 @@ class HCPProfileRead(BaseModel):
     preferred_channel: str
     last_interaction_summary: str | None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, strict=True, extra="forbid")
+
+
+HCPProfileRead = HCPProfileOut
