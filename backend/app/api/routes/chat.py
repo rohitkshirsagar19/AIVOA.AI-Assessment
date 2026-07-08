@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
-from app.agent.graph import run_interaction_graph
 from app.schemas.chat import ChatRequest, ChatResponse
+from app.services.agent_service import run_chat_agent
 
 
 router = APIRouter(tags=["chat"])
@@ -9,8 +9,9 @@ router = APIRouter(tags=["chat"])
 
 @router.post("/chat", response_model=ChatResponse)
 def chat(request: ChatRequest) -> ChatResponse:
-    result = run_interaction_graph(
-        user_message=request.message,
+    result = run_chat_agent(
+        session_id=request.session_id,
+        message=request.message,
         current_interaction=request.current_interaction,
     )
 

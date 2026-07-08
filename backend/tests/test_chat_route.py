@@ -17,7 +17,7 @@ def test_post_chat_returns_hcp_profile(monkeypatch) -> None:
     with TestClient(app) as client:
         response = client.post(
             "/api/chat",
-            json={"message": "Show me Dr. Amit Mehta's profile before I log the meeting."},
+            json={"session_id": "session-1", "message": "Show me Dr. Amit Mehta's profile before I log the meeting."},
         )
 
     assert response.status_code == 200
@@ -42,7 +42,7 @@ def test_post_chat_returns_log_interaction_patch(monkeypatch) -> None:
     with TestClient(app) as client:
         response = client.post(
             "/api/chat",
-            json={"message": "I met Dr. Amit Mehta today in person and shared a product brochure."},
+            json={"session_id": "session-2", "message": "I met Dr. Amit Mehta today in person and shared a product brochure."},
         )
 
     assert response.status_code == 200
@@ -67,6 +67,7 @@ def test_post_chat_returns_edit_interaction_patch(monkeypatch) -> None:
         response = client.post(
             "/api/chat",
             json={
+                "session_id": "session-3",
                 "message": "Actually, change the sentiment to neutral and add that he had concerns about pricing.",
                 "current_interaction": {
                     "hcp_name": "Dr. Amit Mehta",
@@ -100,6 +101,7 @@ def test_post_chat_returns_follow_up_patch(monkeypatch) -> None:
         response = client.post(
             "/api/chat",
             json={
+                "session_id": "session-4",
                 "message": "Set a follow-up for next Friday to send clinical study data.",
                 "current_interaction": {"hcp_name": "Dr. Amit Mehta"},
             },
@@ -128,7 +130,7 @@ def test_post_chat_returns_compliance_result(monkeypatch) -> None:
     with TestClient(app) as client:
         response = client.post(
             "/api/chat",
-            json={"message": "Check compliance: CardioPlus is 100% safe and has no side effects."},
+            json={"session_id": "session-5", "message": "Check compliance: CardioPlus is 100% safe and has no side effects."},
         )
 
     assert response.status_code == 200

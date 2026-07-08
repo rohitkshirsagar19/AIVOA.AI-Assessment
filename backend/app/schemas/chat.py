@@ -7,9 +7,8 @@ from app.schemas.tool import ToolDecision
 
 
 class ChatRequest(BaseModel):
+    session_id: str = Field(min_length=1)
     message: str = Field(min_length=1)
-    conversation_id: str | None = None
-    interaction_id: int | None = None
     current_interaction: dict[str, Any] = Field(default_factory=dict)
 
     model_config = ConfigDict(strict=True, extra="forbid")
