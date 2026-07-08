@@ -1,0 +1,231 @@
+:root {
+  font-family: 'Inter', sans-serif;
+  color: #172033;
+  background:
+    radial-gradient(circle at top left, rgba(90, 141, 255, 0.16), transparent 28%),
+    linear-gradient(180deg, #f6f8fc 0%, #edf2fb 100%);
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  min-height: 100vh;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(124, 141, 181, 0.2);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 24px 60px rgba(34, 49, 84, 0.12);
+  overflow: hidden;
+}
+
+.panel-form {
+  padding: 1.5rem;
+}
+
+.panel-chat {
+  padding: 1.5rem;
+  background: linear-gradient(180deg, rgba(18, 28, 52, 0.96), rgba(29, 42, 76, 0.96));
+  color: #f5f7ff;
+}
+
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.panel-header h1 {
+  margin: 0;
+}
+
+.eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5d6b87;
+}
+
+.panel-chat .eyebrow {
+  color: rgba(214, 223, 255, 0.72);
+}
+
+.status-pill {
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: #e7eefc;
+  color: #36518c;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.status-pill-accent {
+  background: rgba(104, 129, 255, 0.18);
+  color: #d7e0ff;
+}
+
+.interaction-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.field-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1.05rem;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff, #f3f6fc);
+  border: 1px solid rgba(124, 141, 181, 0.16);
+}
+
+.field-card:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5d6b87;
+}
+
+.field-value {
+  min-height: 3rem;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: #eef3fb;
+  border: 1px solid rgba(124, 141, 181, 0.18);
+  color: #1d2942;
+  font-size: 0.98rem;
+  font-weight: 500;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.field-value-multiline {
+  min-height: 5.25rem;
+}
+
+.field-value-empty {
+  color: #7a88a6;
+  font-weight: 400;
+}
+
+.placeholder-line {
+  display: block;
+  height: 0.78rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d9e3f7, #c7d5f1);
+}
+
+.chat-stack {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding-bottom: 1rem;
+}
+
+.chat-bubble {
+  max-width: 88%;
+  padding: 1rem 1rem 1.1rem;
+  border-radius: 22px;
+}
+
+.chat-bubble.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #6f86ff, #4b5fe8);
+}
+
+.chat-bubble.assistant {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(224, 231, 255, 0.14);
+}
+
+.bubble-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.chat-bubble p {
+  margin: 0;
+}
+
+.composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(224, 231, 255, 0.14);
+}
+
+.composer button {
+  border: 0;
+  border-radius: 14px;
+  padding: 0.75rem 1.1rem;
+  background: #f2f5ff;
+  color: #20315c;
+  font-weight: 700;
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .interaction-form {
+    grid-template-columns: 1fr;
+  }
+
+  .field-card:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}
