@@ -1,7 +1,6 @@
 from app.agent.graph import run_interaction_graph
 
 
-
 def test_check_compliance_flags_risky_claims_and_adds_suggestion(monkeypatch) -> None:
     def fake_classify(_: str):
         from app.schemas.tool import ToolDecision
@@ -26,11 +25,9 @@ def test_check_compliance_flags_risky_claims_and_adds_suggestion(monkeypatch) ->
     assert result["tool_used"] == "check_compliance"
     assert result["updated_interaction"]["compliance_status"] == "flagged"
     assert result["updated_interaction"]["compliance_issues"] == [
+        "Guaranteed cure claim",
         "Claims no side effects",
         "Claims 100% safe",
-    ] or result["updated_interaction"]["compliance_issues"] == [
-        "Claims 100% safe",
-        "Claims no side effects",
     ]
     assert "evidence-based" in result["updated_interaction"]["compliance_suggestion"]
     assert result["fields_updated"] == [
@@ -38,7 +35,6 @@ def test_check_compliance_flags_risky_claims_and_adds_suggestion(monkeypatch) ->
         "compliance_issues",
         "compliance_suggestion",
     ]
-
 
 
 def test_check_compliance_returns_clear_when_no_rules_match(monkeypatch) -> None:

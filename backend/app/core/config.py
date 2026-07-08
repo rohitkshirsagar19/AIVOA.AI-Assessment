@@ -16,7 +16,7 @@ class Settings(BaseSettings):
         alias="CORS_ORIGINS",
     )
     groq_api_key: str | None = Field(default=None, alias="GROQ_API_KEY")
-    groq_model: str = Field(default="gemma2-9b-it", alias="GROQ_MODEL")
+    groq_model: str = Field(default="llama-3.3-70b-versatile", alias="GROQ_MODEL")
 
     model_config = SettingsConfigDict(
         env_file=".env",
