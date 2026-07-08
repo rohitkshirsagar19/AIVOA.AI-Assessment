@@ -23,7 +23,8 @@ body {
   min-height: 100vh;
 }
 
-button {
+button,
+input {
   font: inherit;
 }
 
@@ -149,6 +150,26 @@ button {
   font-weight: 400;
 }
 
+.tool-banner,
+.error-banner {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 16px;
+  font-size: 0.92rem;
+}
+
+.tool-banner {
+  background: rgba(109, 138, 255, 0.18);
+  border: 1px solid rgba(174, 193, 255, 0.24);
+  color: #dfe8ff;
+}
+
+.error-banner {
+  background: rgba(255, 126, 126, 0.14);
+  border: 1px solid rgba(255, 164, 164, 0.18);
+  color: #ffd9d9;
+}
+
 .placeholder-line {
   display: block;
   height: 0.78rem;
@@ -162,6 +183,7 @@ button {
   flex-direction: column;
   gap: 0.9rem;
   padding-bottom: 1rem;
+  overflow-y: auto;
 }
 
 .chat-bubble {
@@ -179,6 +201,10 @@ button {
   align-self: flex-start;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(224, 231, 255, 0.14);
+}
+
+.loading-bubble {
+  opacity: 0.84;
 }
 
 .bubble-label {
@@ -206,6 +232,18 @@ button {
   border: 1px solid rgba(224, 231, 255, 0.14);
 }
 
+.composer-input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #f5f7ff;
+}
+
+.composer-input::placeholder {
+  color: rgba(222, 229, 255, 0.5);
+}
+
 .composer button {
   border: 0;
   border-radius: 14px;
@@ -213,6 +251,10 @@ button {
   background: #f2f5ff;
   color: #20315c;
   font-weight: 700;
+}
+
+.composer button:disabled {
+  opacity: 0.6;
 }
 
 @media (max-width: 960px) {
