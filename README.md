@@ -91,10 +91,10 @@ Frontend base: `http://localhost:5173`
 - The frontend calls `POST /api/interactions` and persists the current AI-filled form to PostgreSQL.
 
 ## Screenshots
-### Desktop
+### ss1
 ![AI-first HCP CRM desktop split-screen view](screenshots/ss1.png)
 
-### Mobile
+### ss2
 ![AI-first HCP CRM mobile responsive view](screenshots/ss2.png)
 
 ## Demo Video
