@@ -8,8 +8,8 @@ export default function UpdatedFieldsList({ fieldsUpdated }: UpdatedFieldsListPr
   }
 
   return (
-    <section className="insight-card">
-      <div className="insight-header">
+    <section className="updated-fields-card">
+      <div className="updated-fields-header">
         <p className="eyebrow">Updated Fields</p>
         <h2>Backend-applied changes</h2>
       </div>

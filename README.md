@@ -91,15 +91,12 @@ Frontend base: `http://localhost:5173`
 - The frontend calls `POST /api/interactions` and persists the current AI-filled form to PostgreSQL.
 
 ## Screenshots
-- `[Placeholder] Main split-screen CRM view`
-- `[Placeholder] Compliance review state`
-- `[Placeholder] Saved interaction confirmation`
+### Desktop
+![AI-first HCP CRM desktop split-screen view](screenshots/ss1.png)
+
+### Mobile
+![AI-first HCP CRM mobile responsive view](screenshots/ss2.png)
 
 ## Demo Video
-- `[Placeholder] Add Loom or YouTube walkthrough link here`
+- [Project walkthrough video](https://drive.google.com/file/d/1exHfKYyjGq5pXqGOO8J7sXhPeWA62fwF/view?usp=drive_link)
 
-## Known Limitations
-- Conversation memory is not persisted by `session_id`; each request relies on the submitted `current_interaction`.
-- UI E2E browser automation is not set up.
-- `samples_shared` exists in the form model, but extraction coverage is lighter than the main interaction fields.
-- Startup uses lightweight schema patching in `init_db` rather than formal migrations.

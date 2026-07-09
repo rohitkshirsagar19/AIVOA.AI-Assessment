@@ -309,6 +309,24 @@ input {
   border: 1px solid rgba(174, 193, 255, 0.16);
 }
 
+.updated-fields-card {
+  margin-bottom: 0.95rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(224, 231, 255, 0.12);
+}
+
+.updated-fields-header {
+  margin-bottom: 0.72rem;
+}
+
+.updated-fields-header h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: #f5f7ff;
+}
+
 .chat-stack {
   display: flex;
   flex: 1;
